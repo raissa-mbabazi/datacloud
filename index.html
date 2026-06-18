@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Control Center</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1ea;
+      --bg-alt: #efe7db;
+      --panel: rgba(255, 255, 255, 0.74);
+      --panel-strong: #ffffff;
+      --text: #18202a;
+      --muted: #5f6975;
+      --line: rgba(24, 32, 42, 0.12);
+      --accent: #0f766e;
+      --accent-2: #c2410c;
+      --accent-soft: rgba(15, 118, 110, 0.12);
+      --shadow: 0 24px 60px rgba(43, 34, 25, 0.12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(194, 65, 12, 0.14), transparent 24%),
+        linear-gradient(180deg, var(--bg) 0%, #f7f4ee 42%, var(--bg-alt) 100%);
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 20px 40px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr 0.9fr;
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .headline {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 300px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .headline::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -30% auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(24, 32, 42, 0.05);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow span {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px var(--accent-soft);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 4vw, 4.3rem);
+      line-height: 0.98;
+      max-width: 11ch;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      max-width: 62ch;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      margin-top: 26px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn.primary {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), #065f58);
+      box-shadow: 0 16px 28px rgba(15, 118, 110, 0.28);
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid var(--line);
+    }
+
+    .status-card {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+
+    .metric .value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .metric .delta {
+      margin-top: 8px;
+      color: #0f766e;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+    }
+
+    .card {
+      padding: 22px;
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 1.1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .card p.note {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .control {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid var(--line);
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .control-row strong {
+      font-size: 0.95rem;
+    }
+
+    .control-row span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .switches {
+      display: grid;
+      gap: 12px;
+    }
+
+    .switch {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .switch .meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .switch .meta strong { font-size: 0.95rem; }
+    .switch .meta span { color: var(--muted); font-size: 0.88rem; }
+
+    .toggle {
+      width: 54px;
+      height: 32px;
+      border-radius: 999px;
+      position: relative;
+      background: #c9d3db;
+      flex: 0 0 auto;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    }
+
+    .toggle::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+      transition: transform 160ms ease;
+    }
+
+    .toggle.on {
+      background: linear-gradient(135deg, var(--accent), #0f9b8f);
+    }
+
+    .toggle.on::before { transform: translateX(22px); }
+
+    .table-card {
+      margin-top: 20px;
+      padding: 22px;
+    }
+
+    .table-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      color: white;
+      background: linear-gradient(135deg, var(--accent-2), #9a3412);
+      border-color: transparent;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 14px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(24, 32, 42, 0.08);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tbody tr:hover { background: rgba(15, 118, 110, 0.05); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .ok { color: #0f766e; background: rgba(15, 118, 110, 0.1); }
+    .warn { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+    .risk { color: #b91c1c; background: rgba(239, 68, 68, 0.12); }
+
+    .log {
+      display: grid;
+      gap: 12px;
+    }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .log-item .dot {
+      margin-top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #7dd3fc);
+    }
+
+    .log-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .log-item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .section-grid { grid-template-columns: 1fr; }
+      .headline { min-height: auto; }
+    }
+
+    @media (max-width: 680px) {
+      .wrap { padding: 18px 12px 28px; }
+      .status-grid { grid-template-columns: 1fr; }
+      .table-toolbar { align-items: flex-start; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tbody tr {
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(24, 32, 42, 0.08);
+      }
+      td { border: 0; padding: 8px 0; }
+      td::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--muted);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="panel headline">
+        <div>
+          <div class="eyebrow"><span></span> Data Control Center</div>
+          <h1>Control, inspect, and govern data from one place.</h1>
+          <p class="subtitle">
+            Track ingestion, quality thresholds, and export rules in a focused operations view.
+            This layout is designed as a practical control page with clear state, actionable controls,
+            and immediate visibility into what is changing.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary">Run Sync Now</button>
+          <button class="btn secondary">Review Audit Trail</button>
+        </div>
+      </div>
+
+      <aside class="panel status-card">
+        <div class="status-grid">
+          <div class="metric">
+            <div class="label">Active feeds</div>
+            <div class="value">18</div>
+            <div class="delta">+3 today</div>
+          </div>
+          <div class="metric">
+            <div class="label">Quality score</div>
+            <div class="value">94.2%</div>
+            <div class="delta">Stable</div>
+          </div>
+          <div class="metric">
+            <div class="label">Pending approvals</div>
+            <div class="value">7</div>
+            <div class="delta">2 urgent</div>
+          </div>
+          <div class="metric">
+            <div class="label">Freshness lag</div>
+            <div class="value">2m</div>
+            <div class="delta">Within SLA</div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="label">Policy status</div>
+          <div class="value" style="font-size:1.1rem;">Protection enabled</div>
+          <div class="delta">Masking, validation, and retention controls are active.</div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section-grid">
+      <div class="panel card">
+        <h2>Operational Controls</h2>
+        <p class="note">Tune the live rules that govern how data enters, moves, and gets flagged.</p>
+
+        <div class="controls">
+          <div class="control">
+            <div class="control-row">
+              <strong>Ingestion priority</strong>
+              <span>Balanced</span>
+            </div>
+            <input type="range" min="0" max="100" value="62" aria-label="Ingestion priority">
+          </div>
+
+          <div class="control">
+            <div class="control-row">
+              <strong>Alert sensitivity</strong>
+              <span>High</span>
+            </div>
+            <input type="range" min="0" max="100" value="78" aria-label="Alert sensitivity">
+          </div>
+
+          <div class="switches">
+            <div class="switch">
+              <div class="meta">
+                <strong>Auto quarantine suspicious rows</strong>
+                <span>Hold records that exceed validation thresholds.</span>
+              </div>
+              <div class="toggle on" aria-label="Auto quarantine enabled"></div>
+            </div>
+            <div class="switch">
+              <div class="meta">
+                <strong>Mask sensitive columns</strong>
+                <span>Hide protected values in downstream exports.</span>
+              </div>
+              <div class="toggle on" aria-label="Mask sensitive columns enabled"></div>
+            </div>
+            <div class="switch">
+              <div class="meta">
+                <strong>Allow ad hoc exports</strong>
+                <span>Permit manual extraction for privileged users.</span>
+              </div>
+              <div class="toggle" aria-label="Allow ad hoc exports disabled"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel card">
+        <h2>Review Queue</h2>
+        <p class="note">Surface the records that need a decision before they flow onward.</p>
+
+        <div class="log">
+          <div class="log-item">
+            <div class="dot"></div>
+            <div>
+              <strong>Dataset delta detected</strong>
+              <p>Orders feed picked up an unexpected schema shift. Reconciliation is pending.</p>
+            </div>
+          </div>
+          <div class="log-item">
+            <div class="dot"></div>
+            <div>
+              <strong>Retention rule approaching expiry</strong>
+              <p>Archive policy for event logs reaches review in 5 days. Approve or extend.</p>
+            </div>
+          </div>
+          <div class="log-item">
+            <div class="dot"></div>
+            <div>
+              <strong>Export request flagged</strong>
+              <p>Analyst request contains restricted fields and requires a compliance check.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel table-card">
+      <div class="table-toolbar">
+        <div>
+          <h2 style="margin:0 0 6px;">Data Assets</h2>
+          <p class="note" style="margin:0;">Monitor the current state of key feeds and policy enforcement.</p>
+        </div>
+        <div class="filters" aria-label="Data asset filters">
+          <button class="chip active">All</button>
+          <button class="chip">Critical</button>
+          <button class="chip">Healthy</button>
+          <button class="chip">Needs Review</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Status</th>
+            <th>Owner</th>
+            <th>Last Sync</th>
+            <th>Policy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Asset">Sales Ledger</td>
+            <td data-label="Status"><span class="badge ok">Healthy</span></td>
+            <td data-label="Owner">Finance Ops</td>
+            <td data-label="Last Sync">12 sec ago</td>
+            <td data-label="Policy">Masking active</td>
+          </tr>
+          <tr>
+            <td data-label="Asset">Customer Profile</td>
+            <td data-label="Status"><span class="badge warn">Needs Review</span></td>
+            <td data-label="Owner">Growth Data</td>
+            <td data-label="Last Sync">4 min ago</td>
+            <td data-label="Policy">PII rules pending</td>
+          </tr>
+          <tr>
+            <td data-label="Asset">Billing Events</td>
+            <td data-label="Status"><span class="badge ok">Healthy</span></td>
+            <td data-label="Owner">Platform Team</td>
+            <td data-label="Last Sync">46 sec ago</td>
+            <td data-label="Policy">Retention locked</td>
+          </tr>
+          <tr>
+            <td data-label="Asset">Partner Export</td>
+            <td data-label="Status"><span class="badge risk">Critical</span></td>
+            <td data-label="Owner">RevOps</td>
+            <td data-label="Last Sync">19 min ago</td>
+            <td data-label="Policy">Manual approval required</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footer-note">Designed as a self-contained control page. If you want this wired into a specific framework, I can adapt it next.</div>
+    </section>
+  </div>
+</body>
+</html>
