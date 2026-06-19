@@ -133,6 +133,13 @@
       transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
     }
 
+    .btn:focus-visible,
+    .chip:focus-visible,
+    .toggle:focus-visible {
+      outline: 3px solid rgba(15, 118, 110, 0.28);
+      outline-offset: 2px;
+    }
+
     .btn:hover { transform: translateY(-1px); }
 
     .btn.primary {
@@ -274,6 +281,9 @@
       background: #c9d3db;
       flex: 0 0 auto;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+      border: 0;
+      padding: 0;
+      cursor: pointer;
     }
 
     .toggle::before {
@@ -417,6 +427,28 @@
       font-size: 0.88rem;
     }
 
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(360px, calc(100vw - 36px));
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(24, 32, 42, 0.92);
+      color: #fff;
+      box-shadow: 0 18px 40px rgba(24, 32, 42, 0.24);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 20;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     @media (max-width: 980px) {
       .hero, .section-grid { grid-template-columns: 1fr; }
       .headline { min-height: auto; }
@@ -459,35 +491,35 @@
           </p>
         </div>
         <div class="hero-actions">
-          <button class="btn primary">Run Sync Now</button>
-          <button class="btn secondary">Review Audit Trail</button>
+          <button class="btn primary" id="run-sync" type="button">Run Sync Now</button>
+          <button class="btn secondary" id="review-audit" type="button">Review Audit Trail</button>
         </div>
       </div>
 
       <aside class="panel status-card">
         <div class="status-grid">
-          <div class="metric">
+          <div class="metric" data-metric="active-feeds">
             <div class="label">Active feeds</div>
             <div class="value">18</div>
             <div class="delta">+3 today</div>
           </div>
-          <div class="metric">
+          <div class="metric" data-metric="quality-score">
             <div class="label">Quality score</div>
             <div class="value">94.2%</div>
             <div class="delta">Stable</div>
           </div>
-          <div class="metric">
+          <div class="metric" data-metric="pending-approvals">
             <div class="label">Pending approvals</div>
             <div class="value">7</div>
             <div class="delta">2 urgent</div>
           </div>
-          <div class="metric">
+          <div class="metric" data-metric="freshness-lag">
             <div class="label">Freshness lag</div>
             <div class="value">2m</div>
             <div class="delta">Within SLA</div>
           </div>
         </div>
-        <div class="metric">
+        <div class="metric" data-metric="policy-status">
           <div class="label">Policy status</div>
           <div class="value" style="font-size:1.1rem;">Protection enabled</div>
           <div class="delta">Masking, validation, and retention controls are active.</div>
@@ -523,21 +555,21 @@
                 <strong>Auto quarantine suspicious rows</strong>
                 <span>Hold records that exceed validation thresholds.</span>
               </div>
-              <div class="toggle on" aria-label="Auto quarantine enabled"></div>
+              <button class="toggle on" type="button" aria-label="Auto quarantine enabled" aria-pressed="true" data-setting="autoQuarantine"></button>
             </div>
             <div class="switch">
               <div class="meta">
                 <strong>Mask sensitive columns</strong>
                 <span>Hide protected values in downstream exports.</span>
               </div>
-              <div class="toggle on" aria-label="Mask sensitive columns enabled"></div>
+              <button class="toggle on" type="button" aria-label="Mask sensitive columns enabled" aria-pressed="true" data-setting="maskSensitiveColumns"></button>
             </div>
             <div class="switch">
               <div class="meta">
                 <strong>Allow ad hoc exports</strong>
                 <span>Permit manual extraction for privileged users.</span>
               </div>
-              <div class="toggle" aria-label="Allow ad hoc exports disabled"></div>
+              <button class="toggle" type="button" aria-label="Allow ad hoc exports disabled" aria-pressed="false" data-setting="allowAdHocExports"></button>
             </div>
           </div>
         </div>
@@ -547,28 +579,7 @@
         <h2>Review Queue</h2>
         <p class="note">Surface the records that need a decision before they flow onward.</p>
 
-        <div class="log">
-          <div class="log-item">
-            <div class="dot"></div>
-            <div>
-              <strong>Dataset delta detected</strong>
-              <p>Orders feed picked up an unexpected schema shift. Reconciliation is pending.</p>
-            </div>
-          </div>
-          <div class="log-item">
-            <div class="dot"></div>
-            <div>
-              <strong>Retention rule approaching expiry</strong>
-              <p>Archive policy for event logs reaches review in 5 days. Approve or extend.</p>
-            </div>
-          </div>
-          <div class="log-item">
-            <div class="dot"></div>
-            <div>
-              <strong>Export request flagged</strong>
-              <p>Analyst request contains restricted fields and requires a compliance check.</p>
-            </div>
-          </div>
+        <div class="log" id="audit-log">
         </div>
       </div>
     </section>
@@ -580,10 +591,10 @@
           <p class="note" style="margin:0;">Monitor the current state of key feeds and policy enforcement.</p>
         </div>
         <div class="filters" aria-label="Data asset filters">
-          <button class="chip active">All</button>
-          <button class="chip">Critical</button>
-          <button class="chip">Healthy</button>
-          <button class="chip">Needs Review</button>
+          <button class="chip active" type="button" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-filter="critical" aria-pressed="false">Critical</button>
+          <button class="chip" type="button" data-filter="healthy" aria-pressed="false">Healthy</button>
+          <button class="chip" type="button" data-filter="needs-review" aria-pressed="false">Needs Review</button>
         </div>
       </div>
 
@@ -597,40 +608,400 @@
             <th>Policy</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td data-label="Asset">Sales Ledger</td>
-            <td data-label="Status"><span class="badge ok">Healthy</span></td>
-            <td data-label="Owner">Finance Ops</td>
-            <td data-label="Last Sync">12 sec ago</td>
-            <td data-label="Policy">Masking active</td>
-          </tr>
-          <tr>
-            <td data-label="Asset">Customer Profile</td>
-            <td data-label="Status"><span class="badge warn">Needs Review</span></td>
-            <td data-label="Owner">Growth Data</td>
-            <td data-label="Last Sync">4 min ago</td>
-            <td data-label="Policy">PII rules pending</td>
-          </tr>
-          <tr>
-            <td data-label="Asset">Billing Events</td>
-            <td data-label="Status"><span class="badge ok">Healthy</span></td>
-            <td data-label="Owner">Platform Team</td>
-            <td data-label="Last Sync">46 sec ago</td>
-            <td data-label="Policy">Retention locked</td>
-          </tr>
-          <tr>
-            <td data-label="Asset">Partner Export</td>
-            <td data-label="Status"><span class="badge risk">Critical</span></td>
-            <td data-label="Owner">RevOps</td>
-            <td data-label="Last Sync">19 min ago</td>
-            <td data-label="Policy">Manual approval required</td>
-          </tr>
+        <tbody id="assets-body">
         </tbody>
       </table>
 
       <div class="footer-note">Designed as a self-contained control page. If you want this wired into a specific framework, I can adapt it next.</div>
     </section>
   </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const storageKey = 'datacloud.dashboard.state';
+
+    const defaultState = {
+      activeFilter: 'all',
+      settings: {
+        ingestionPriority: 62,
+        alertSensitivity: 78,
+        autoQuarantine: true,
+        maskSensitiveColumns: true,
+        allowAdHocExports: false,
+      },
+      assets: [
+        {
+          asset: 'Sales Ledger',
+          status: 'healthy',
+          owner: 'Finance Ops',
+          lastSyncSeconds: 12,
+          policy: 'Masking active',
+        },
+        {
+          asset: 'Customer Profile',
+          status: 'needs-review',
+          owner: 'Growth Data',
+          lastSyncSeconds: 240,
+          policy: 'PII rules pending',
+        },
+        {
+          asset: 'Billing Events',
+          status: 'healthy',
+          owner: 'Platform Team',
+          lastSyncSeconds: 46,
+          policy: 'Retention locked',
+        },
+        {
+          asset: 'Partner Export',
+          status: 'critical',
+          owner: 'RevOps',
+          lastSyncSeconds: 1140,
+          policy: 'Manual approval required',
+        },
+      ],
+      audit: [
+        {
+          title: 'Dataset delta detected',
+          detail: 'Orders feed picked up an unexpected schema shift. Reconciliation is pending.',
+          tone: 'warn',
+          timestamp: Date.now() - 1000 * 60 * 28,
+        },
+        {
+          title: 'Retention rule approaching expiry',
+          detail: 'Archive policy for event logs reaches review in 5 days. Approve or extend.',
+          tone: 'warn',
+          timestamp: Date.now() - 1000 * 60 * 78,
+        },
+        {
+          title: 'Export request flagged',
+          detail: 'Analyst request contains restricted fields and requires a compliance check.',
+          tone: 'risk',
+          timestamp: Date.now() - 1000 * 60 * 122,
+        },
+      ],
+      syncCount: 0,
+    };
+
+    const state = loadState();
+
+    const assetsBody = document.getElementById('assets-body');
+    const auditLog = document.getElementById('audit-log');
+    const toast = document.getElementById('toast');
+    const runSyncButton = document.getElementById('run-sync');
+    const reviewAuditButton = document.getElementById('review-audit');
+    const chipButtons = Array.from(document.querySelectorAll('.chip'));
+    const toggleButtons = Array.from(document.querySelectorAll('.toggle'));
+    const rangeInputs = Array.from(document.querySelectorAll('input[type="range"]'));
+    const controlCards = Array.from(document.querySelectorAll('.controls .control'));
+    const metricCards = Array.from(document.querySelectorAll('.status-card .metric'));
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) {
+          return structuredClone(defaultState);
+        }
+
+        const parsed = JSON.parse(saved);
+        return {
+          ...structuredClone(defaultState),
+          ...parsed,
+          settings: { ...defaultState.settings, ...(parsed.settings || {}) },
+          assets: Array.isArray(parsed.assets) ? parsed.assets : structuredClone(defaultState.assets),
+          audit: Array.isArray(parsed.audit) ? parsed.audit : structuredClone(defaultState.audit),
+        };
+      } catch {
+        return structuredClone(defaultState);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      } catch {
+        // Ignore storage failures and continue operating in-memory.
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatRelativeSeconds(seconds) {
+      if (seconds < 60) {
+        return `${seconds} sec ago`;
+      }
+
+      const minutes = Math.round(seconds / 60);
+      return `${minutes} min ago`;
+    }
+
+    function formatTimestamp(timestamp) {
+      return new Intl.DateTimeFormat(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(timestamp);
+    }
+
+    function priorityLabel(value) {
+      if (value < 35) return 'Conservative';
+      if (value < 70) return 'Balanced';
+      return 'Aggressive';
+    }
+
+    function sensitivityLabel(value) {
+      if (value < 35) return 'Low';
+      if (value < 70) return 'Medium';
+      return 'High';
+    }
+
+    function toneForStatus(status) {
+      if (status === 'healthy') return 'ok';
+      if (status === 'needs-review') return 'warn';
+      return 'risk';
+    }
+
+    function statusLabel(status) {
+      if (status === 'healthy') return 'Healthy';
+      if (status === 'needs-review') return 'Needs Review';
+      return 'Critical';
+    }
+
+    function computeQualityScore() {
+      const healthyCount = state.assets.filter((asset) => asset.status === 'healthy').length;
+      const reviewCount = state.assets.filter((asset) => asset.status === 'needs-review').length;
+      const criticalCount = state.assets.filter((asset) => asset.status === 'critical').length;
+      const baseScore = 84 + Math.round(state.settings.ingestionPriority / 8) - Math.round(state.settings.alertSensitivity / 20);
+      const protectionBonus = state.settings.maskSensitiveColumns ? 4 : -6;
+      const quarantineBonus = state.settings.autoQuarantine ? 5 : -3;
+      const healthBonus = healthyCount * 2 - reviewCount * 5 - criticalCount * 12;
+      return clamp(baseScore + protectionBonus + quarantineBonus + healthBonus, 42, 99);
+    }
+
+    function computeFreshnessLag() {
+      return Math.max(...state.assets.map((asset) => asset.lastSyncSeconds));
+    }
+
+    function computePendingApprovals() {
+      return state.assets.filter((asset) => asset.status !== 'healthy').length + (state.settings.allowAdHocExports ? 0 : 1);
+    }
+
+    function addAuditEntry(title, detail, tone = 'ok') {
+      state.audit.unshift({
+        title,
+        detail,
+        tone,
+        timestamp: Date.now(),
+      });
+      state.audit = state.audit.slice(0, 6);
+    }
+
+    function renderMetrics() {
+      const activeFeeds = state.assets.length;
+      const qualityScore = computeQualityScore();
+      const pendingApprovals = computePendingApprovals();
+      const freshnessLag = computeFreshnessLag();
+
+      const metricMap = {
+        'active-feeds': {
+          value: String(activeFeeds),
+          delta: `+${state.syncCount + 3} today`,
+        },
+        'quality-score': {
+          value: `${qualityScore.toFixed(1)}%`,
+          delta: qualityScore >= 90 ? 'Stable' : 'Watching closely',
+        },
+        'pending-approvals': {
+          value: String(pendingApprovals),
+          delta: `${Math.max(0, pendingApprovals - 1)} urgent`,
+        },
+        'freshness-lag': {
+          value: freshnessLag < 60 ? `${freshnessLag}s` : `${Math.round(freshnessLag / 60)}m`,
+          delta: freshnessLag < 180 ? 'Within SLA' : 'Review backlog',
+        },
+        'policy-status': {
+          value: state.settings.maskSensitiveColumns && state.settings.autoQuarantine ? 'Protection enabled' : 'Protection reduced',
+          delta: state.settings.maskSensitiveColumns && state.settings.autoQuarantine
+            ? 'Masking, validation, and retention controls are active.'
+            : 'One or more controls are relaxed for faster throughput.',
+        },
+      };
+
+      metricCards.forEach((card) => {
+        const key = card.dataset.metric;
+        const metric = metricMap[key];
+        if (!metric) {
+          return;
+        }
+
+        const valueElement = card.querySelector('.value');
+        const deltaElement = card.querySelector('.delta');
+        valueElement.textContent = metric.value;
+        deltaElement.textContent = metric.delta;
+      });
+    }
+
+    function renderControls() {
+      const [priorityCard, sensitivityCard] = controlCards;
+      const priorityInput = priorityCard.querySelector('input[type="range"]');
+      const sensitivityInput = sensitivityCard.querySelector('input[type="range"]');
+      const priorityValue = priorityCard.querySelector('.control-row span');
+      const sensitivityValue = sensitivityCard.querySelector('.control-row span');
+
+      priorityInput.value = String(state.settings.ingestionPriority);
+      sensitivityInput.value = String(state.settings.alertSensitivity);
+      priorityValue.textContent = priorityLabel(state.settings.ingestionPriority);
+      sensitivityValue.textContent = sensitivityLabel(state.settings.alertSensitivity);
+
+      toggleButtons.forEach((button) => {
+        const settingName = button.dataset.setting;
+        const enabled = Boolean(state.settings[settingName]);
+        button.classList.toggle('on', enabled);
+        button.setAttribute('aria-pressed', String(enabled));
+        button.setAttribute('aria-label', `${settingName.replace(/[A-Z]/g, ' $&').toLowerCase()} ${enabled ? 'enabled' : 'disabled'}`);
+      });
+    }
+
+    function renderAssets() {
+      const activeFilter = state.activeFilter;
+      const visibleAssets = state.assets.filter((asset) => activeFilter === 'all' || asset.status === activeFilter);
+
+      assetsBody.innerHTML = '';
+
+      if (visibleAssets.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5" data-label="Asset">No assets match the current filter.</td>';
+        assetsBody.appendChild(row);
+        return;
+      }
+
+      for (const asset of visibleAssets) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td data-label="Asset">${asset.asset}</td>
+          <td data-label="Status"><span class="badge ${toneForStatus(asset.status)}">${statusLabel(asset.status)}</span></td>
+          <td data-label="Owner">${asset.owner}</td>
+          <td data-label="Last Sync">${formatRelativeSeconds(asset.lastSyncSeconds)}</td>
+          <td data-label="Policy">${asset.policy}</td>
+        `;
+        assetsBody.appendChild(row);
+      }
+    }
+
+    function renderAudit() {
+      auditLog.innerHTML = '';
+
+      for (const entry of state.audit) {
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `
+          <div class="dot"></div>
+          <div>
+            <strong>${entry.title}</strong>
+            <p>${entry.detail}</p>
+            <p style="margin-top:6px; color: var(--muted); font-size: 0.82rem;">${formatTimestamp(entry.timestamp)}</p>
+          </div>
+        `;
+        auditLog.appendChild(item);
+      }
+    }
+
+    function renderChips() {
+      chipButtons.forEach((button) => {
+        const isActive = button.dataset.filter === state.activeFilter;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+      });
+    }
+
+    function render() {
+      renderMetrics();
+      renderControls();
+      renderAssets();
+      renderAudit();
+      renderChips();
+      saveState();
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2400);
+    }
+
+    rangeInputs[0].addEventListener('input', (event) => {
+      state.settings.ingestionPriority = Number(event.target.value);
+      render();
+    });
+
+    rangeInputs[1].addEventListener('input', (event) => {
+      state.settings.alertSensitivity = Number(event.target.value);
+      render();
+    });
+
+    toggleButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const settingName = button.dataset.setting;
+        const label = button.previousElementSibling.querySelector('strong').textContent;
+        state.settings[settingName] = !state.settings[settingName];
+        addAuditEntry(
+          `${label} ${state.settings[settingName] ? 'enabled' : 'disabled'}`,
+          'Dashboard settings were updated from the control panel.',
+          state.settings[settingName] ? 'ok' : 'warn'
+        );
+        render();
+        showToast(`${label} ${state.settings[settingName] ? 'enabled' : 'disabled'}`);
+      });
+    });
+
+    chipButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.activeFilter = button.dataset.filter;
+        render();
+        showToast(`Filtered assets: ${button.textContent}`);
+      });
+    });
+
+    runSyncButton.addEventListener('click', () => {
+      state.syncCount += 1;
+
+      state.assets = state.assets.map((asset) => ({
+        ...asset,
+        lastSyncSeconds: Math.max(6, Math.round(Math.random() * 45)),
+      }));
+
+      const recoverableAsset = state.assets.find((asset) => asset.status !== 'healthy');
+      if (recoverableAsset && state.settings.autoQuarantine) {
+        const previousStatus = recoverableAsset.status;
+        recoverableAsset.status = 'healthy';
+        recoverableAsset.policy = 'Validated after quarantine';
+        addAuditEntry(
+          `${recoverableAsset.asset} remediated`,
+          `Automatic quarantine resolved a ${previousStatus.replace('-', ' ')} condition during sync.`,
+          'ok'
+        );
+      } else {
+        addAuditEntry(
+          'Sync completed',
+          'All feeds were refreshed and no automatic quarantine action was required.',
+          'ok'
+        );
+      }
+
+      render();
+      showToast('Sync completed successfully');
+    });
+
+    reviewAuditButton.addEventListener('click', () => {
+      auditLog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Reviewing audit trail');
+    });
+
+    render();
+  </script>
 </body>
 </html>
